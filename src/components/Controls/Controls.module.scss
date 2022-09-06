@@ -1,0 +1,47 @@
+.controls {
+  position: fixed;
+  right: 100px;
+  bottom: 100px;
+  display: grid;
+  grid-template-columns: 25px 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+}
+
+.control {
+  font-size: 16px;
+  background-color: var(--colors-gray-600);
+  border: 1px solid var(--colors-gray-800);
+  padding-right: 20px;
+  text-transform: uppercase;
+  position: relative;
+  
+  &::after {
+    content: "";
+    position: absolute;
+    right: 5px;
+    top: 11px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color:#1e0000;
+  }
+
+
+  &.auto {
+    writing-mode: vertical-lr;
+    text-orientation: upright;
+    word-wrap: break-word;
+    grid-row: 1 / -1;
+    grid-column: 1 / 2;
+    padding-bottom: 20px;
+
+    &::after {
+      top: 82px;
+      right: 9px;
+    }
+  }
+
+  &.active::after {
+    background-color: #7fff00;
+  }
+}
