@@ -68,5 +68,4 @@ export const CONFIGS = [
   },
 ];
 
-export const BLINK_ON_TIME = 0.4;
-export const BLINK_OFF_TIME = 0.7;
+export const BLINK_TIME = 500;

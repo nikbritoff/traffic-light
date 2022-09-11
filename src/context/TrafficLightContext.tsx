@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { BLINK_OFF_TIME, BLINK_ON_TIME, CONFIGS, TrafficLightColor, TrafficLightMode } from '../const/traffic-light-settings';
+import { BLINK_TIME, CONFIGS, TrafficLightColor, TrafficLightMode } from '../const/traffic-light-settings';
 import { convertSecToMs } from '../utils/convertSecToMs';
 
 type TrafficLightContextType = {
@@ -22,8 +22,6 @@ export const TrafficLightProvider: React.FC<TrafficLightContextProps> = (
   ) => {
   const [mode, setMode] = useState(TrafficLightMode.Auto);
   const [ currentConfig, setCurrentConfig ] = useState(0);
-  const [ lit, setLit ] = useState<TrafficLightColor[]>(CONFIGS[0].lit);
-  const [ blink, setBlink ] = useState<TrafficLightColor[]>(CONFIGS[0].blink);
   const [ activies, setActivies ] = useState<TrafficLightColor[]>([...CONFIGS[0].blink, ...CONFIGS[0].lit]);
 
   const timerIdChangeConfig = useRef<undefined | NodeJS.Timeout>();
@@ -32,8 +30,6 @@ export const TrafficLightProvider: React.FC<TrafficLightContextProps> = (
 
   const setAutoMode = () => {
     setCurrentConfig(0);
-    setLit(CONFIGS[0].lit);
-    setBlink([]);
     setActivies(CONFIGS[0].lit);
     setMode(TrafficLightMode.Auto);
   };
@@ -42,49 +38,64 @@ export const TrafficLightProvider: React.FC<TrafficLightContextProps> = (
     setMode(TrafficLightMode.Manual);
     clearInterval(timerIdChangeConfig.current);
     clearInterval(timerIdTurnLightsOn.current);
+    clearInterval(timerIdTurnBlinkOff.current);
   };
 
   const setLight = (light: TrafficLightColor) => {
+    console.log('set light');
     setActivies([light]);
   };
 
   useEffect(() => {
     const changeConfig = ():void => {
-      timerIdTurnBlinkOff.current = setTimeout(() => {
-        currentConfig === CONFIGS.length - 1
-        ? setCurrentConfig(0)
-        : setCurrentConfig(() => currentConfig + 1);
-        
-        clearTimeout(timerIdTurnBlinkOff.current);
-      }, convertSecToMs(CONFIGS[currentConfig].duration));
-    };
-
-    const turnLightsOn = () => {
       timerIdChangeConfig.current = setTimeout(() => {
-        setBlink(CONFIGS[currentConfig].blink);
-        setLit(CONFIGS[currentConfig].lit);
-        setActivies([...CONFIGS[currentConfig].blink, ...CONFIGS[currentConfig].lit]);
-      }, convertSecToMs(BLINK_ON_TIME));
-    };
-
-    const turnBlinkOff = () => {
-      timerIdTurnLightsOn.current = setTimeout(() => {
-        setBlink([]);
-        setActivies(() => [...CONFIGS[currentConfig].lit]);
-      }, convertSecToMs(BLINK_OFF_TIME));
+        const nextIndex = currentConfig === CONFIGS.length - 1 ? 0 : currentConfig + 1;
+        setCurrentConfig(nextIndex);
+        setActivies(() => [...CONFIGS[nextIndex].blink, ...CONFIGS[nextIndex].lit]);
+        
+        clearTimeout(timerIdChangeConfig.current);
+      }, convertSecToMs(CONFIGS[currentConfig].duration));
     };
 
     if (mode === TrafficLightMode.Auto) {
       changeConfig();
-      turnLightsOn();
-      turnBlinkOff();
     }
 
     return () => {
       clearTimeout(timerIdChangeConfig.current);
-      clearTimeout(timerIdTurnLightsOn.current);
     }
-  }, [currentConfig, mode, lit, blink]);
+  }, [currentConfig, mode]);
+
+  useEffect(() => {
+    const isBlinked = CONFIGS[currentConfig].blink.length > 0 && mode === TrafficLightMode.Auto;
+
+    const turnBlinkOff = () => {
+      timerIdTurnBlinkOff.current = setTimeout(() => {
+        setActivies(() => CONFIGS[currentConfig].lit);
+      }, BLINK_TIME);
+    };
+
+    const turnBlinkOn = () => {
+      timerIdTurnLightsOn.current = setTimeout(() => {
+        setActivies(() => [...CONFIGS[currentConfig].blink, ...CONFIGS[currentConfig].lit]);
+      }, BLINK_TIME);
+    };
+
+    if (isBlinked) {
+      const isBlinkedActivies = activies.findIndex((item) => item === CONFIGS[currentConfig].blink[0]);
+
+      if (isBlinkedActivies) {
+        turnBlinkOn();
+      } else {
+        turnBlinkOff(); 
+      }
+    }
+
+    return () => {
+      clearTimeout(timerIdTurnLightsOn.current);
+      clearTimeout(timerIdTurnBlinkOff.current);
+    }
+  }, [activies, currentConfig, mode])
 
   return (
     <TrafficLightContext.Provider value={{
