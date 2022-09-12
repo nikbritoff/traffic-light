@@ -42,7 +42,6 @@ export const TrafficLightProvider: React.FC<TrafficLightContextProps> = (
   };
 
   const setLight = (light: TrafficLightColor) => {
-    console.log('set light');
     setActivies([light]);
   };
 
